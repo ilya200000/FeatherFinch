@@ -14,7 +14,7 @@ public class ServerMixin {
 
     @Inject(at = @At("HEAD"), method = "loadLevel")
     private void featherfinch$onLoadLevel(CallbackInfo info) {
-        LOGGER.info("FeatherFinch: Очистка RAM перед загрузкой...");
+        LOGGER.info("FeatherFinch: Очистка памяти перед загрузкой мира...");
         System.gc(); 
     }
 }
