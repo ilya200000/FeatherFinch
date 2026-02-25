@@ -14,24 +14,24 @@ public class ServerMixin {
     private long lastCleanTime = 0;
 
     @Inject(at = @At("HEAD"), method = "tickServer")
-    private void featherfinch$criticalMemoryCheck(CallbackInfo info) {
+    private void featherfinch$aggressiveMemoryCheck(CallbackInfo info) {
         Runtime runtime = Runtime.getRuntime();
         
-        long maxMemory = runtime.maxMemory(); // Максимум (твои 5000МБ)
-        long allocatedMemory = runtime.totalMemory(); // Сколько Java уже зарезервировала
-        long freeMemory = runtime.freeMemory(); // Свободно внутри зарезервированного
+        long maxMemory = runtime.maxMemory(); 
+        long allocatedMemory = runtime.totalMemory();
+        long freeMemory = runtime.freeMemory();
         
-        // Считаем реально свободное место
-        long actualFree = freeMemory + (maxMemory - allocatedMemory);
-        double freePercent = (double) actualFree / maxMemory * 100.0;
+        // Считаем занятую память
+        long usedMemory = allocatedMemory - freeMemory;
+        double usedPercent = (double) usedMemory / maxMemory * 100.0;
 
-        // Если осталось МЕНЬШЕ 2% памяти (Нагрузка > 98%)
-        if (freePercent < 2.0) {
-            // Проверка, чтобы не чистить чаще чем раз в 10 секунд (иначе упадет FPS)
-            if (System.currentTimeMillis() - lastCleanTime > 10000) {
-                LOGGER.warn("FeatherFinch: КРИТИЧЕСКИЙ УРОВЕНЬ RAM! Свободно: {}%. Очистка...", String.format("%.2f", freePercent));
+        // ЕСЛИ ЗАНЯТО БОЛЬШЕ 2% (Нагрузка > 2%)
+        if (usedPercent > 2.0) {
+            // Чистим не чаще раза в 3 секунды, чтобы не превратить игру в слайд-шоу
+            if (System.currentTimeMillis() - lastCleanTime > 3000) {
+                // LOGGER.info("FeatherFinch: Нагрузка {}% - Чистка RAM!", String.format("%.1f", usedPercent));
                 
-                System.gc(); // Принудительный сбор мусора
+                System.gc(); // Вызываем сборщик мусора
                 
                 lastCleanTime = System.currentTimeMillis();
             }
@@ -40,6 +40,6 @@ public class ServerMixin {
 
     @Inject(at = @At("HEAD"), method = "loadLevel")
     private void featherfinch$onLoad(CallbackInfo info) {
-        LOGGER.info("FeatherFinch: Система 'Аварийный выключатель 2%' активирована.");
+        LOGGER.info("FeatherFinch: Режим 'Стерильность' (Чистка при нагрузке > 2%) запущен!");
     }
 }
