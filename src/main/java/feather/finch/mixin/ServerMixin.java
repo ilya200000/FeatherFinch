@@ -8,31 +8,38 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 @Mixin(MinecraftServer.class)
 public class ServerMixin {
     private static final Logger LOGGER = LoggerFactory.getLogger("FeatherFinch");
-    private static final ScheduledExecutorService CLEANER_SERVICE = Executors.newSingleThreadScheduledExecutor();
-    private static boolean isRunning = false;
+    private long lastCleanTime = 0;
+
+    @Inject(at = @At("HEAD"), method = "tickServer")
+    private void featherfinch$criticalMemoryCheck(CallbackInfo info) {
+        Runtime runtime = Runtime.getRuntime();
+        
+        long maxMemory = runtime.maxMemory(); // Максимум (твои 5000МБ)
+        long allocatedMemory = runtime.totalMemory(); // Сколько Java уже зарезервировала
+        long freeMemory = runtime.freeMemory(); // Свободно внутри зарезервированного
+        
+        // Считаем реально свободное место
+        long actualFree = freeMemory + (maxMemory - allocatedMemory);
+        double freePercent = (double) actualFree / maxMemory * 100.0;
+
+        // Если осталось МЕНЬШЕ 2% памяти (Нагрузка > 98%)
+        if (freePercent < 2.0) {
+            // Проверка, чтобы не чистить чаще чем раз в 10 секунд (иначе упадет FPS)
+            if (System.currentTimeMillis() - lastCleanTime > 10000) {
+                LOGGER.warn("FeatherFinch: КРИТИЧЕСКИЙ УРОВЕНЬ RAM! Свободно: {}%. Очистка...", String.format("%.2f", freePercent));
+                
+                System.gc(); // Принудительный сбор мусора
+                
+                lastCleanTime = System.currentTimeMillis();
+            }
+        }
+    }
 
     @Inject(at = @At("HEAD"), method = "loadLevel")
-    private void featherfinch$onLoadLevel(CallbackInfo info) {
-        if (!isRunning) {
-            LOGGER.info("FeatherFinch: Система мягкой очистки RAM запущена!");
-            
-            // Первая очистка перед тяжелой загрузкой
-            System.gc();
-
-            // Запускаем фоновую задачу: чистить память каждые 60 секунд
-            CLEANER_SERVICE.scheduleAtFixedRate(() -> {
-                // LOGGER.info("FeatherFinch: Фоновая уборка мусора..."); 
-                System.gc();
-            }, 1, 1, TimeUnit.MINUTES);
-
-            isRunning = true;
-        }
+    private void featherfinch$onLoad(CallbackInfo info) {
+        LOGGER.info("FeatherFinch: Система 'Аварийный выключатель 2%' активирована.");
     }
 }
