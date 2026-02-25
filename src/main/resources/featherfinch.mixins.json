@@ -1,14 +1,13 @@
 {
-	"required": true,
-	"package": "feather.finch.mixin",
-	"compatibilityLevel": "JAVA_21",
-	"mixins": [
-		"ExampleMixin"
-	],
-	"injectors": {
-		"defaultRequire": 1
-	},
-	"overwrites": {
-		"requireAnnotations": true
-	}
+  "required": true,
+  "minVersion": "0.8",
+  "package": "feather.finch.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntityMixin",
+    "ServerLoadMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
