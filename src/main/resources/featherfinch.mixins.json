@@ -4,8 +4,7 @@
   "package": "feather.finch.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "EntityMixin",
-    "ServerLoadMixin"
+    "ExampleMixin"
   ],
   "injectors": {
     "defaultRequire": 1
